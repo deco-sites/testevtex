@@ -15,6 +15,8 @@ import { ProductDetailsPage } from "apps/commerce/types.ts";
 import { mapProductToAnalyticsItem } from "apps/commerce/utils/productToAnalyticsItem.ts";
 import ProductSelector from "./ProductVariantSelector.tsx";
 import { timingSafeEqual } from "https://deno.land/std@0.203.0/crypto/timing_safe_equal.ts";
+
+// @ts-ignore as `Deno.openKv` is still unstable.
 const kv = await Deno.openKv();
 
 const uuid = self.crypto.randomUUID();
