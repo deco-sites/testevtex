@@ -19,6 +19,10 @@ const kv = await Deno.openKv();
 
 const uuid = self.crypto.randomUUID();
 
+window.onunload = () => {
+  console.log("onunload is called");
+};
+
 globalThis.addEventListener("unload", () => {
   decreaseVisitorOnUnload();
 });
@@ -47,20 +51,6 @@ async function getVisitorCount() {
   console.log("value", res.value);
   console.log("versionstamp", res.versionstamp);
   return res.value;
-}
-
-function addOrIncrement(
-  map: Map<Deno.KvKeyPart, number>,
-  item: Uint8Array,
-  increment: boolean,
-) {
-  for (const [k, v] of map) {
-    if (ArrayBuffer.isView(k) && timingSafeEqual(k, item)) {
-      map.set(k, increment ? v + 1 : v);
-      return;
-    }
-  }
-  map.set(item, increment ? 1 : 0);
 }
 
 function addIfUnique(set: Set<Deno.KvKeyPart>, item: Uint8Array) {
@@ -103,6 +93,30 @@ function ProductInfo({ page, layout }: Props) {
   if (page === null) {
     throw new Error("Missing Product Details Page Info");
   }
+
+  const handler = (e: Event): void => {
+    console.log(`got ${e.type} event in event handler (main)`);
+  };
+  
+  globalThis.addEventListener("load", handler);
+  
+  globalThis.addEventListener("beforeunload", handler);
+  
+  globalThis.addEventListener("unload", handler);
+  
+  globalThis.onload = (e: Event): void => {
+    console.log(`got ${e.type} event in onload function (main)`);
+  };
+  
+  globalThis.onbeforeunload = (e: Event): void => {
+    console.log(`got ${e.type} event in onbeforeunload function (main)`);
+  };
+  
+  globalThis.onunload = (e: Event): void => {
+    console.log(`got ${e.type} event in onunload function (main)`);
+  };
+  
+  console.log("log from main script");
 
   const {
     breadcrumbList,
