@@ -45,6 +45,7 @@ jobs:
         uses: deco-cx/deploy@v0
         with:
           site: ${{ matrix.site }}
+          build_cmd: "deno task build"
 
       - name: Retry Deco Deploy
         id: decoDeployRetryStep
@@ -52,3 +53,4 @@ jobs:
         uses: deco-cx/deploy@v0
         with:
           site: ${{ matrix.site }}
+          build_cmd: "deno task build"

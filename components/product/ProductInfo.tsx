@@ -14,24 +14,7 @@ import { usePlatform } from "$store/sdk/usePlatform.tsx";
 import { ProductDetailsPage } from "apps/commerce/types.ts";
 import { mapProductToAnalyticsItem } from "apps/commerce/utils/productToAnalyticsItem.ts";
 import ProductSelector from "./ProductVariantSelector.tsx";
-import { timingSafeEqual } from "https://deno.land/std@0.203.0/crypto/timing_safe_equal.ts";
-
-// @ts-ignore as `Deno.openKv` is still unstable.
-const kv = await Deno.openKv();
-
-const uuid = self.crypto.randomUUID();
-
-window.onunload = () => {
-  console.log("onunload is called");
-};
-
-globalThis.addEventListener("unload", () => {
-  decreaseVisitorOnUnload();
-});
-
-async function decreaseVisitorOnUnload() {
-  await kv.delete([`${uuid}`]);
-}
+import VisitorsOnline from "../ui/VisitorsOnline.tsx";
 
 interface Props {
   page: ProductDetailsPage | null;
@@ -42,52 +25,13 @@ interface Props {
      * @default product
      */
     name?: "concat" | "productGroup" | "product";
+    showViews?: {
+      viewsOnTop?: boolean;
+      viewsOnMiddle?: boolean;
+      viewsOnBotton?: boolean;
+    };
   };
 }
-
-async function getVisitorCount() {
-  await kv.atomic().sum([`${uuid}`], 1n).commit();
-
-  const res = await kv.get([`${uuid}`]);
-  console.log("key", res.key);
-  console.log("value", res.value);
-  console.log("versionstamp", res.versionstamp);
-  return res.value;
-}
-
-function addIfUnique(set: Set<Deno.KvKeyPart>, item: Uint8Array) {
-  for (const i of set) {
-    if (ArrayBuffer.isView(i) && timingSafeEqual(i, item)) {
-      return;
-    }
-  }
-  set.add(item);
-}
-
-export async function unique(
-  kv: Deno.Kv,
-  prefix: Deno.KvKey = [],
-  options?: Deno.KvListOptions,
-): Promise<Deno.KvKey[]> {
-  getVisitorCount();
-  const list = kv.list({ prefix }, options);
-  const prefixLength = prefix.length;
-  const prefixes = new Set<Deno.KvKeyPart>();
-  for await (const { key } of list) {
-    if (key.length <= prefixLength) {
-      throw new TypeError(`Unexpected key length of ${key.length}.`);
-    }
-    const part = key[prefixLength];
-    if (ArrayBuffer.isView(part)) {
-      addIfUnique(prefixes, part);
-    } else {
-      prefixes.add(part);
-    }
-  }
-  return [...prefixes].map((part) => [...prefix, part]);
-}
-
-const visitorCount = (await unique(kv, [])).length;
 
 function ProductInfo({ page, layout }: Props) {
   const platform = usePlatform();
@@ -95,30 +39,6 @@ function ProductInfo({ page, layout }: Props) {
   if (page === null) {
     throw new Error("Missing Product Details Page Info");
   }
-
-  const handler = (e: Event): void => {
-    console.log(`got ${e.type} event in event handler (main)`);
-  };
-  
-  globalThis.addEventListener("load", handler);
-  
-  globalThis.addEventListener("beforeunload", handler);
-  
-  globalThis.addEventListener("unload", handler);
-  
-  globalThis.onload = (e: Event): void => {
-    console.log(`got ${e.type} event in onload function (main)`);
-  };
-  
-  globalThis.onbeforeunload = (e: Event): void => {
-    console.log(`got ${e.type} event in onbeforeunload function (main)`);
-  };
-  
-  globalThis.onunload = (e: Event): void => {
-    console.log(`got ${e.type} event in onunload function (main)`);
-  };
-  
-  console.log("log from main script");
 
   const {
     breadcrumbList,
@@ -146,8 +66,7 @@ function ProductInfo({ page, layout }: Props) {
 
   return (
     <div class="flex flex-col">
-      {/* <VisitorsOnline /> */}
-      {visitorCount.toString() + " pessoas viram este produto"}
+      {layout?.showViews?.viewsOnTop && <VisitorsOnline />}
       {/* Breadcrumb */}
       <Breadcrumb
         itemListElement={breadcrumbList?.itemListElement.slice(0, -1)}
@@ -193,6 +112,7 @@ function ProductInfo({ page, layout }: Props) {
       </div>
       {/* Add to Cart and Favorites button */}
       <div class="mt-4 sm:mt-10 flex flex-col gap-2">
+        {layout?.showViews?.viewsOnMiddle && <VisitorsOnline />}
         {true
           ? (
             <>
@@ -258,6 +178,7 @@ function ProductInfo({ page, layout }: Props) {
             </>
           )
           : <OutOfStock productID={productID} />}
+        {layout?.showViews?.viewsOnBotton && <VisitorsOnline />}
       </div>
       {/* Shipping Simulation */}
       <div class="mt-8">
