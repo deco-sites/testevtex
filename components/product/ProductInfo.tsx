@@ -14,6 +14,18 @@ import { usePlatform } from "$store/sdk/usePlatform.tsx";
 import { ProductDetailsPage } from "apps/commerce/types.ts";
 import { mapProductToAnalyticsItem } from "apps/commerce/utils/productToAnalyticsItem.ts";
 import ProductSelector from "./ProductVariantSelector.tsx";
+import { timingSafeEqual } from "https://deno.land/std@0.203.0/crypto/timing_safe_equal.ts";
+const kv = await Deno.openKv();
+
+const uuid = self.crypto.randomUUID();
+
+globalThis.addEventListener("unload", () => {
+  decreaseVisitorOnUnload();
+});
+
+async function decreaseVisitorOnUnload() {
+  await kv.delete([`${uuid}`]);
+}
 
 interface Props {
   page: ProductDetailsPage | null;
@@ -26,6 +38,64 @@ interface Props {
     name?: "concat" | "productGroup" | "product";
   };
 }
+
+async function getVisitorCount() {
+  await kv.atomic().sum([`${uuid}`], 1n).commit();
+
+  const res = await kv.get([`${uuid}`]);
+  console.log("key", res.key);
+  console.log("value", res.value);
+  console.log("versionstamp", res.versionstamp);
+  return res.value;
+}
+
+function addOrIncrement(
+  map: Map<Deno.KvKeyPart, number>,
+  item: Uint8Array,
+  increment: boolean,
+) {
+  for (const [k, v] of map) {
+    if (ArrayBuffer.isView(k) && timingSafeEqual(k, item)) {
+      map.set(k, increment ? v + 1 : v);
+      return;
+    }
+  }
+  map.set(item, increment ? 1 : 0);
+}
+
+function addIfUnique(set: Set<Deno.KvKeyPart>, item: Uint8Array) {
+  for (const i of set) {
+    if (ArrayBuffer.isView(i) && timingSafeEqual(i, item)) {
+      return;
+    }
+  }
+  set.add(item);
+}
+
+export async function unique(
+  kv: Deno.Kv,
+  prefix: Deno.KvKey = [],
+  options?: Deno.KvListOptions,
+): Promise<Deno.KvKey[]> {
+  getVisitorCount();
+  const list = kv.list({ prefix }, options);
+  const prefixLength = prefix.length;
+  const prefixes = new Set<Deno.KvKeyPart>();
+  for await (const { key } of list) {
+    if (key.length <= prefixLength) {
+      throw new TypeError(`Unexpected key length of ${key.length}.`);
+    }
+    const part = key[prefixLength];
+    if (ArrayBuffer.isView(part)) {
+      addIfUnique(prefixes, part);
+    } else {
+      prefixes.add(part);
+    }
+  }
+  return [...prefixes].map((part) => [...prefix, part]);
+}
+
+const visitorCount = (await unique(kv, [])).length;
 
 function ProductInfo({ page, layout }: Props) {
   const platform = usePlatform();
@@ -60,6 +130,8 @@ function ProductInfo({ page, layout }: Props) {
 
   return (
     <div class="flex flex-col">
+      {/* <VisitorsOnline /> */}
+      {visitorCount.toString() + " pessoas viram este produto"}
       {/* Breadcrumb */}
       <Breadcrumb
         itemListElement={breadcrumbList?.itemListElement.slice(0, -1)}
@@ -105,7 +177,7 @@ function ProductInfo({ page, layout }: Props) {
       </div>
       {/* Add to Cart and Favorites button */}
       <div class="mt-4 sm:mt-10 flex flex-col gap-2">
-        {availability === "https://schema.org/InStock"
+        {true
           ? (
             <>
               {platform === "vtex" && (
