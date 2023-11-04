@@ -15,6 +15,7 @@ import { ProductDetailsPage } from "apps/commerce/types.ts";
 import { mapProductToAnalyticsItem } from "apps/commerce/utils/productToAnalyticsItem.ts";
 import ProductSelector from "./ProductVariantSelector.tsx";
 import VisitorsOnline from "../ui/VisitorsOnline.tsx";
+import GallerySlider from "./Gallery/ImageSlider.tsx";
 
 interface Props {
   page: ProductDetailsPage | null;
@@ -65,164 +66,182 @@ function ProductInfo({ page, layout }: Props) {
   const discount = price && listPrice ? listPrice - price : 0;
 
   return (
-    <div class="flex flex-col">
-      {layout?.showViews?.viewsOnTop && <VisitorsOnline />}
-      {/* Breadcrumb */}
-      <Breadcrumb
-        itemListElement={breadcrumbList?.itemListElement.slice(0, -1)}
-      />
-      {/* Code and name */}
-      <div class="mt-4 sm:mt-8">
-        <div>
-          {gtin && (
-            <span class="text-sm text-base-300">
-              Cod. {gtin}
-            </span>
-          )}
-        </div>
-        <h1>
-          <span class="font-medium text-xl capitalize">
-            {layout?.name === "concat"
-              ? `${isVariantOf?.name} ${name}`
-              : layout?.name === "productGroup"
-              ? isVariantOf?.name
-              : name}
-          </span>
-        </h1>
+    layout?.showViews?.viewsOnTop && (
+      <>
+      <div class="flex justify-center">
+        <VisitorsOnline />
       </div>
-      {/* Prices */}
-      <div class="mt-4">
-        <div class="flex flex-row gap-2 items-center">
-          {(listPrice ?? 0) > price && (
-            <span class="line-through text-base-300 text-xs">
-              {formatPrice(listPrice, offers?.priceCurrency)}
-            </span>
-          )}
-          <span class="font-medium text-xl text-secondary">
-            {formatPrice(price, offers?.priceCurrency)}
-          </span>
-        </div>
-        <span class="text-sm text-base-300">
-          {installments}
-        </span>
-      </div>
-      {/* Sku Selector */}
-      <div class="mt-4 sm:mt-6">
-        <ProductSelector product={product} />
-      </div>
-      {/* Add to Cart and Favorites button */}
-      <div class="mt-4 sm:mt-10 flex flex-col gap-2">
-        {layout?.showViews?.viewsOnMiddle && <VisitorsOnline />}
-        {true
-          ? (
-            <>
+        <div class="md:flex container">
+          <div class="md:w-1/2 container">
+            <GallerySlider
+              page={page}
+              layout={{
+                width: 200,
+                height: 200,
+              }}
+            />
+          </div>
+          <div class="md:w-1/2 container p-4">
+            {/* Breadcrumb */}
+
+            <Breadcrumb
+              itemListElement={breadcrumbList?.itemListElement.slice(0, -1)}
+            />
+            {/* Code and name */}
+            <div class="mt-4 sm:mt-8">
+              <div>
+                {gtin && (
+                  <span class="text-sm text-base-300">
+                    Cod. {gtin}
+                  </span>
+                )}
+              </div>
+              <h1>
+                <span class="font-medium text-xl capitalize">
+                  {layout?.name === "concat"
+                    ? `${isVariantOf?.name} ${name}`
+                    : layout?.name === "productGroup"
+                    ? isVariantOf?.name
+                    : name}
+                </span>
+              </h1>
+            </div>
+            {/* Prices */}
+            <div class="mt-4">
+              <div class="flex flex-row gap-2 items-center">
+                {(listPrice ?? 0) > price && (
+                  <span class="line-through text-base-300 text-xs">
+                    {formatPrice(listPrice, offers?.priceCurrency)}
+                  </span>
+                )}
+                <span class="font-medium text-xl text-secondary">
+                  {formatPrice(price, offers?.priceCurrency)}
+                </span>
+              </div>
+              <span class="text-sm text-base-300">
+                {installments}
+              </span>
+            </div>
+            {/* Sku Selector */}
+            <div class="mt-4 sm:mt-6">
+              <ProductSelector product={product} />
+            </div>
+            {/* Add to Cart and Favorites button */}
+            <div class="mt-4 sm:mt-10 flex flex-col gap-2">
+              {layout?.showViews?.viewsOnMiddle && <VisitorsOnline />}
+              {true
+                ? (
+                  <>
+                    {platform === "vtex" && (
+                      <>
+                        <AddToCartButtonVTEX
+                          url={url || ""}
+                          name={name}
+                          productID={productID}
+                          productGroupID={productGroupID}
+                          price={price}
+                          discount={discount}
+                          seller={seller}
+                        />
+                        <WishlistButton
+                          variant="full"
+                          productID={productID}
+                          productGroupID={productGroupID}
+                        />
+                      </>
+                    )}
+                    {platform === "wake" && (
+                      <AddToCartButtonWake
+                        url={url || ""}
+                        name={name}
+                        productID={productID}
+                        productGroupID={productGroupID}
+                        price={price}
+                        discount={discount}
+                      />
+                    )}
+                    {platform === "linx" && (
+                      <AddToCartButtonLinx
+                        url={url || ""}
+                        name={name}
+                        productID={productID}
+                        productGroupID={productGroupID}
+                        price={price}
+                        discount={discount}
+                      />
+                    )}
+                    {platform === "vnda" && (
+                      <AddToCartButtonVNDA
+                        url={url || ""}
+                        name={name}
+                        productID={productID}
+                        productGroupID={productGroupID}
+                        price={price}
+                        discount={discount}
+                        additionalProperty={additionalProperty}
+                      />
+                    )}
+                    {platform === "shopify" && (
+                      <AddToCartButtonShopify
+                        url={url || ""}
+                        name={name}
+                        productID={productID}
+                        productGroupID={productGroupID}
+                        price={price}
+                        discount={discount}
+                      />
+                    )}
+                  </>
+                )
+                : <OutOfStock productID={productID} />}
+              {layout?.showViews?.viewsOnBotton && <VisitorsOnline />}
+            </div>
+            {/* Shipping Simulation */}
+            <div class="mt-8">
               {platform === "vtex" && (
-                <>
-                  <AddToCartButtonVTEX
-                    url={url || ""}
-                    name={name}
-                    productID={productID}
-                    productGroupID={productGroupID}
-                    price={price}
-                    discount={discount}
-                    seller={seller}
-                  />
-                  <WishlistButton
-                    variant="full"
-                    productID={productID}
-                    productGroupID={productGroupID}
-                  />
-                </>
-              )}
-              {platform === "wake" && (
-                <AddToCartButtonWake
-                  url={url || ""}
-                  name={name}
-                  productID={productID}
-                  productGroupID={productGroupID}
-                  price={price}
-                  discount={discount}
+                <ShippingSimulation
+                  items={[{
+                    id: Number(product.sku),
+                    quantity: 1,
+                    seller: seller,
+                  }]}
                 />
               )}
-              {platform === "linx" && (
-                <AddToCartButtonLinx
-                  url={url || ""}
-                  name={name}
-                  productID={productID}
-                  productGroupID={productGroupID}
-                  price={price}
-                  discount={discount}
-                />
-              )}
-              {platform === "vnda" && (
-                <AddToCartButtonVNDA
-                  url={url || ""}
-                  name={name}
-                  productID={productID}
-                  productGroupID={productGroupID}
-                  price={price}
-                  discount={discount}
-                  additionalProperty={additionalProperty}
-                />
-              )}
-              {platform === "shopify" && (
-                <AddToCartButtonShopify
-                  url={url || ""}
-                  name={name}
-                  productID={productID}
-                  productGroupID={productGroupID}
-                  price={price}
-                  discount={discount}
-                />
-              )}
-            </>
-          )
-          : <OutOfStock productID={productID} />}
-        {layout?.showViews?.viewsOnBotton && <VisitorsOnline />}
-      </div>
-      {/* Shipping Simulation */}
-      <div class="mt-8">
-        {platform === "vtex" && (
-          <ShippingSimulation
-            items={[{
-              id: Number(product.sku),
-              quantity: 1,
-              seller: seller,
-            }]}
-          />
-        )}
-      </div>
-      {/* Description card */}
-      <div class="mt-4 sm:mt-6">
-        <span class="text-sm">
-          {description && (
-            <details>
-              <summary class="cursor-pointer">Descrição</summary>
-              <div
-                class="ml-2 mt-2"
-                dangerouslySetInnerHTML={{ __html: description }}
-              />
-            </details>
-          )}
-        </span>
-      </div>
-      {/* Analytics Event */}
-      <SendEventOnLoad
-        event={{
-          name: "view_item",
-          params: {
-            items: [
-              mapProductToAnalyticsItem({
-                product,
-                breadcrumbList,
-                price,
-                listPrice,
-              }),
-            ],
-          },
-        }}
-      />
-    </div>
+            </div>
+            {/* Description card */}
+            <div class="mt-4 sm:mt-6">
+              <span class="text-sm">
+                {description && (
+                  <details>
+                    <summary class="cursor-pointer">Descrição</summary>
+                    <div
+                      class="ml-2 mt-2"
+                      dangerouslySetInnerHTML={{ __html: description }}
+                    />
+                  </details>
+                )}
+              </span>
+            </div>
+            {/* Analytics Event */}
+            <SendEventOnLoad
+              event={{
+                name: "view_item",
+                params: {
+                  items: [
+                    mapProductToAnalyticsItem({
+                      product,
+                      breadcrumbList,
+                      price,
+                      listPrice,
+                    }),
+                  ],
+                },
+              }}
+            />
+          </div>
+        </div>
+      </>
+    )
   );
 }
 
